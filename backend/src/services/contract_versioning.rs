@@ -304,6 +304,12 @@ Build failed in deterministic container.
             created_at: Utc::now(),
         };
 
+        let mut tx = self
+            .db
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
         let _ = sqlx::query(
             "INSERT INTO contract_versions
              (id, contract_id, version, source_hash, wasm_hash, changelog, created_by, created_at)
@@ -317,10 +323,53 @@ Build failed in deterministic container.
         .bind(&version.changelog)
         .bind(&version.created_by)
         .bind(version.created_at)
-        .execute(&self.db)
+        .execute(&mut *tx)
         .await;
 
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
         Ok(version)
+    }
+
+    pub async fn update_version_badge_and_deployment_log(
+        &self,
+        version_id: &str,
+        verification_badge: &str,
+        deployment_log: &str,
+    ) -> Result<(), AppError> {
+        let mut tx = self
+            .db
+            .begin()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        sqlx::query(
+            "UPDATE contract_versions SET verification_badge = $1 WHERE id = $2",
+        )
+        .bind(verification_badge)
+        .bind(version_id)
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        sqlx::query(
+            "INSERT INTO deployment_logs (id, version_id, log, created_at) VALUES ($1, $2, $3, $4)",
+        )
+        .bind(Uuid::new_v4().to_string())
+        .bind(version_id)
+        .bind(deployment_log)
+        .bind(Utc::now())
+        .execute(&mut *tx)
+        .await
+        .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        tx.commit()
+            .await
+            .map_err(|e| AppError::DatabaseError(e.to_string()))?;
+
+        Ok(())
     }
 
     pub fn diff(&self, request: VersionDiffRequest) -> VersionDiff {
