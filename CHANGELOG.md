@@ -1,3 +1,21 @@
+## [1.32.2](https://github.com/benelabs/crucible/compare/v1.32.1...v1.32.2) (2026-09-27)
+
+### Bug Fixes
+
+* **api:** handle immediate WebSocket disconnect and teardown stream channels ([#1051](https://github.com/benelabs/crucible/issues/1051)) ([051c35d](https://github.com/benelabs/crucible/commit/051c35d57b4c7411129179a5bf9cd692fd324991)), closes [#1012](https://github.com/benelabs/crucible/issues/1012)
+* **config:** separate web and worker SQLx database connection pools ([#1044](https://github.com/benelabs/crucible/issues/1044)) ([032c3d2](https://github.com/benelabs/crucible/commit/032c3d2e45f736feaa2f29512521ad073ad36ce7)), closes [#1026](https://github.com/benelabs/crucible/issues/1026)
+* **database:** add composite indexes to audit_logs table (resolves [#1025](https://github.com/benelabs/crucible/issues/1025)) ([562b8c1](https://github.com/benelabs/crucible/commit/562b8c16eb6d1d8b07772ba70c332c8cc76ff380))
+* **db:** wrap multi-step versioning and deployment updates in explicit transaction (closes [#1027](https://github.com/benelabs/crucible/issues/1027)) ([#1040](https://github.com/benelabs/crucible/issues/1040)) ([fe88c61](https://github.com/benelabs/crucible/commit/fe88c6187fc239bc700df545e59924cc6ae61a9c))
+* **gasless:** bind network ID and contract domain separator in meta-tx auth ([#1046](https://github.com/benelabs/crucible/issues/1046)) ([9e35738](https://github.com/benelabs/crucible/commit/9e357389e8ff6542d30d40de7e14636593d4406f)), closes [#1031](https://github.com/benelabs/crucible/issues/1031)
+* **graphql:** disable schema introspection in production environment ([#1052](https://github.com/benelabs/crucible/issues/1052)) ([8fcd2f6](https://github.com/benelabs/crucible/commit/8fcd2f684df713e4f5876024583714b13567aba4)), closes [#1013](https://github.com/benelabs/crucible/issues/1013)
+* **ingestion:** apply backpressure channel writes with dead-letter queue (DLQ) spillover ([#1053](https://github.com/benelabs/crucible/issues/1053)) ([6bd3cac](https://github.com/benelabs/crucible/commit/6bd3cac035ed3cfd48afb9532b26f57472841c50)), closes [#1017](https://github.com/benelabs/crucible/issues/1017)
+* **liquid-staking:** enforce protocol-favoring floor rounding on deposit and redemption ([#1050](https://github.com/benelabs/crucible/issues/1050)) ([e714a35](https://github.com/benelabs/crucible/commit/e714a352948f8db97280e28a0583fdf4ced57004)), closes [#1029](https://github.com/benelabs/crucible/issues/1029)
+* **migrations:** follow strict zero-downtime expand-contract rules for column additions ([#1049](https://github.com/benelabs/crucible/issues/1049)) ([a7a69c8](https://github.com/benelabs/crucible/commit/a7a69c8e5b014845511031f41e7d8d2d04cca519)), closes [#1024](https://github.com/benelabs/crucible/issues/1024)
+* **options-protocol:** enforce profitability condition prior to option settlement ([#1045](https://github.com/benelabs/crucible/issues/1045)) ([c0814e9](https://github.com/benelabs/crucible/commit/c0814e986637726459aa835a668b1326c79d7e94)), closes [#1030](https://github.com/benelabs/crucible/issues/1030)
+* **scheduler:** set MissedTickBehavior::Skip on Tokio tickers to prevent burst execution ([#1048](https://github.com/benelabs/crucible/issues/1048)) ([fd2b72d](https://github.com/benelabs/crucible/commit/fd2b72d91bd99d071b7ff2993cf244e465ef31c3)), closes [#1022](https://github.com/benelabs/crucible/issues/1022)
+* **tracing:** propagate OpenTelemetry trace context across asynchronous task spawns ([#1043](https://github.com/benelabs/crucible/issues/1043)) ([d4ba3cb](https://github.com/benelabs/crucible/commit/d4ba3cb554484bc4b732d434f85fe428fc06d07f)), closes [#1023](https://github.com/benelabs/crucible/issues/1023)
+* **workers:** evict completed jobs and enforce TTL on job progress tracker ([#1047](https://github.com/benelabs/crucible/issues/1047)) ([cd9441f](https://github.com/benelabs/crucible/commit/cd9441fe0979869e31efceb759e4edb0ddbfafd4)), closes [#1021](https://github.com/benelabs/crucible/issues/1021)
+
 ## [1.32.1](https://github.com/benelabs/crucible/compare/v1.32.0...v1.32.1) (2026-09-27)
 
 ### Bug Fixes
