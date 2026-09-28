@@ -193,4 +193,37 @@ mod tests {
         crate::assert_reverts!(client.admin_only());
         crate::assert_reverts!(client.admin_only(), "admin-gated entry point");
     }
+
+    #[test]
+    #[should_panic(expected = "assertion failed: expected event with topics")]
+    fn assert_emitted_panics_when_env_has_zero_events_and_no_contract_filter() {
+        use soroban_sdk::symbol_short;
+        let env = vault_env();
+        // Contract is never called — no events emitted
+        crate::assert_emitted!(
+            env,
+            topics: (symbol_short!("counter"), symbol_short!("inc")),
+            data: 1_u32
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "assertion failed: expected event with topics")]
+    fn assert_emitted_panics_when_env_has_zero_events_with_contract_filter() {
+        use soroban_sdk::symbol_short;
+        let env = vault_env();
+        let id = env.contract_id::<Vault>();
+        crate::assert_emitted!(
+            env,
+            contract: id,
+            topics: (symbol_short!("counter"), symbol_short!("inc")),
+            data: 1_u32
+        );
+    }
+
+    #[test]
+    fn assert_not_emitted_succeeds_when_env_has_zero_events() {
+        let env = vault_env();
+        crate::assert_not_emitted!(env);
+    }
 }

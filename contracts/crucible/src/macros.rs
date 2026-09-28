@@ -70,59 +70,174 @@ macro_rules! assert_reverts {
 /// ```
 #[macro_export]
 macro_rules! assert_emitted {
-    ($env:expr, $contract_id:expr, $topics:expr, $data:expr) => {{
-        extern crate std;
-        use soroban_sdk::testutils::Events as _;
+    // Key-value: contract, topics, data
+    ($env:expr, contract: $contract:expr, topics: $topics:expr, data: $data:expr) => {{
+        use $crate::assertions::AsEnv as _;
         use soroban_sdk::IntoVal as _;
-        use soroban_sdk::TryFromVal as _;
-        use std::string::ToString as _;
-        let __env = $env.inner();
-        let __all = __env.events().all();
-        let __want_contract: soroban_sdk::Address = $contract_id.clone();
+        let __env = $env.as_env();
+        let __want_contract: soroban_sdk::Address = ($contract).clone();
         let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
         let __want_data: soroban_sdk::Val = ($data).into_val(__env);
-        let __want_data_xdr = soroban_sdk::xdr::ScVal::try_from_val(__env, &__want_data).unwrap();
-        let __want_topics_xdr: soroban_sdk::xdr::VecM<soroban_sdk::xdr::ScVal> = __want_topics
-            .iter()
-            .map(|v| soroban_sdk::xdr::ScVal::try_from_val(__env, &v).unwrap())
-            .collect::<std::vec::Vec<_>>()
-            .try_into()
-            .unwrap();
-        let __filtered = __all.filter_by_contract(&__want_contract);
-        let __found = __filtered.events().iter().any(|ev| {
-            let soroban_sdk::xdr::ContractEventBody::V0(ref body) = ev.body;
-            body.topics == __want_topics_xdr && body.data == __want_data_xdr
-        });
-        assert!(
-            __found,
-            "assert_emitted! failed: expected event was not found.\n\
-             \n\
-             Contract : {contract:?}\n\
-             Topics   : {topics:?}\n\
-             Data     : {data:?}\n\
-             \n\
-             Events emitted by this contract ({count}):\n\
-             {actual}",
-            contract = __want_contract,
-            topics = __want_topics,
-            data = __want_data_xdr,
-            count = __filtered.events().len(),
-            actual = {
-                let lines: std::vec::Vec<std::string::String> = __filtered
-                    .events()
-                    .iter()
-                    .enumerate()
-                    .map(|(i, ev)| {
-                        let soroban_sdk::xdr::ContractEventBody::V0(ref body) = ev.body;
-                        std::format!("  [{i}] topics={:?} data={:?}", body.topics, body.data)
-                    })
-                    .collect();
-                if lines.is_empty() {
-                    "  (none)".to_string()
-                } else {
-                    lines.join("\n")
-                }
-            },
+        $crate::assertions::assert_emitted_event(
+            __env,
+            Some(&__want_contract),
+            __want_topics,
+            Some(__want_data),
+            None,
+            None,
+        );
+    }};
+
+    // Key-value: topics, data
+    ($env:expr, topics: $topics:expr, data: $data:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        let __want_data: soroban_sdk::Val = ($data).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            None,
+            __want_topics,
+            Some(__want_data),
+            None,
+            None,
+        );
+    }};
+
+    // Key-value: contract, topics
+    ($env:expr, contract: $contract:expr, topics: $topics:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_contract: soroban_sdk::Address = ($contract).clone();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            Some(&__want_contract),
+            __want_topics,
+            None,
+            None,
+            None,
+        );
+    }};
+
+    // Key-value: topics, count
+    ($env:expr, topics: $topics:expr, count: $count:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            None,
+            __want_topics,
+            None,
+            Some($count),
+            None,
+        );
+    }};
+
+    // Key-value: contract, topics, count
+    ($env:expr, contract: $contract:expr, topics: $topics:expr, count: $count:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_contract: soroban_sdk::Address = ($contract).clone();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            Some(&__want_contract),
+            __want_topics,
+            None,
+            Some($count),
+            None,
+        );
+    }};
+
+    // Key-value: topics, at_index, data
+    ($env:expr, topics: $topics:expr, at_index: $at_index:expr, data: $data:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        let __want_data: soroban_sdk::Val = ($data).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            None,
+            __want_topics,
+            Some(__want_data),
+            None,
+            Some($at_index),
+        );
+    }};
+
+    // Key-value: contract, topics, at_index, data
+    ($env:expr, contract: $contract:expr, topics: $topics:expr, at_index: $at_index:expr, data: $data:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_contract: soroban_sdk::Address = ($contract).clone();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        let __want_data: soroban_sdk::Val = ($data).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            Some(&__want_contract),
+            __want_topics,
+            Some(__want_data),
+            None,
+            Some($at_index),
+        );
+    }};
+
+    // Key-value: topics
+    ($env:expr, topics: $topics:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            None,
+            __want_topics,
+            None,
+            None,
+            None,
+        );
+    }};
+
+    // Positional 4-argument form: env, contract_id, topics, data
+    ($env:expr, $contract_id:expr, $topics:expr, $data:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_contract: soroban_sdk::Address = ($contract_id).clone();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        let __want_data: soroban_sdk::Val = ($data).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            Some(&__want_contract),
+            __want_topics,
+            Some(__want_data),
+            None,
+            None,
+        );
+    }};
+
+    // Positional 3-argument form: env, topics, data
+    ($env:expr, $topics:expr, $data:expr) => {{
+        use $crate::assertions::AsEnv as _;
+        use soroban_sdk::IntoVal as _;
+        let __env = $env.as_env();
+        let __want_topics: soroban_sdk::Vec<soroban_sdk::Val> = ($topics).into_val(__env);
+        let __want_data: soroban_sdk::Val = ($data).into_val(__env);
+        $crate::assertions::assert_emitted_event(
+            __env,
+            None,
+            __want_topics,
+            Some(__want_data),
+            None,
+            None,
         );
     }};
 }
@@ -195,35 +310,8 @@ macro_rules! assert_event_matches {
 #[macro_export]
 macro_rules! assert_not_emitted {
     ($env:expr) => {{
-        extern crate std;
-        use soroban_sdk::testutils::Events as _;
-        use std::string::ToString as _;
-        let __events = $env.inner().events().all();
-        assert!(
-            __events.events().is_empty(),
-            "assert_not_emitted! failed: expected no events, but {count} event(s) were emitted.\n\
-             \n\
-             Emitted events:\n\
-             {list}",
-            count = __events.events().len(),
-            list = {
-                let lines: std::vec::Vec<std::string::String> = __events
-                    .events()
-                    .iter()
-                    .enumerate()
-                    .map(|(i, ev)| {
-                        let soroban_sdk::xdr::ContractEventBody::V0(ref body) = ev.body;
-                        std::format!(
-                            "  [{i}] contract={:?} topics={:?} data={:?}",
-                            ev.contract_id,
-                            body.topics,
-                            body.data
-                        )
-                    })
-                    .collect();
-                lines.join("\n")
-            },
-        );
+        use $crate::assertions::AsEnv as _;
+        $crate::assertions::assert_not_emitted_event($env.as_env());
     }};
 }
 

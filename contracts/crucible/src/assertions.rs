@@ -376,3 +376,134 @@ mod tests {
         assert_eq!(parse_contract_error_code("plain old panic"), None);
     }
 }
+
+/// Helper trait to obtain a reference to a `soroban_sdk::Env`.
+pub trait AsEnv {
+    fn as_env(&self) -> &soroban_sdk::Env;
+}
+
+impl AsEnv for soroban_sdk::Env {
+    fn as_env(&self) -> &soroban_sdk::Env {
+        self
+    }
+}
+
+impl AsEnv for crate::env::MockEnv {
+    fn as_env(&self) -> &soroban_sdk::Env {
+        self.inner()
+    }
+}
+
+impl<T: AsEnv + ?Sized> AsEnv for &T {
+    fn as_env(&self) -> &soroban_sdk::Env {
+        (*self).as_env()
+    }
+}
+
+/// Core assertion helper for `assert_emitted!`.
+///
+/// Panics if no matching event was emitted, or if zero events were emitted in `env`.
+pub fn assert_emitted_event(
+    env: &soroban_sdk::Env,
+    contract: Option<&soroban_sdk::Address>,
+    filter_topics: soroban_sdk::Vec<soroban_sdk::Val>,
+    expected_data: Option<soroban_sdk::Val>,
+    expected_count: Option<usize>,
+    at_index: Option<usize>,
+) {
+    use soroban_env_host::Compare as _;
+    use soroban_sdk::testutils::Events as _;
+    use soroban_sdk::xdr::{self, ScAddress};
+    use soroban_sdk::FromVal as _;
+    use soroban_sdk::IntoVal as _;
+
+    let all_events = env.events().all();
+    let total_events_count = all_events.events().len();
+
+    if total_events_count == 0 {
+        panic!(
+            "assertion failed: expected event with topics {:?} but no events were emitted",
+            filter_topics
+        );
+    }
+
+    let mut matching_events = std::vec::Vec::new();
+
+    for ev in all_events.events() {
+        let hash = match ev.contract_id.as_ref() {
+            Some(id) => id,
+            None => continue,
+        };
+        let sc_addr = ScAddress::Contract(hash.clone());
+        let ev_contract = soroban_sdk::Address::from_val(env, &sc_addr);
+
+        if let Some(target_contract) = contract {
+            if &ev_contract != target_contract {
+                continue;
+            }
+        }
+
+        let xdr::ContractEventBody::V0(ref body) = ev.body;
+        let event_topics: soroban_sdk::Vec<soroban_sdk::Val> = body.topics.clone().into_val(env);
+
+        if !crate::event_topic_match::topics_match(env, &filter_topics, &event_topics) {
+            continue;
+        }
+
+        let event_data: soroban_sdk::Val = body.data.clone().into_val(env);
+        if let Some(ref want_data) = expected_data {
+            if env.compare(&event_data, want_data) != Ok(core::cmp::Ordering::Equal) {
+                continue;
+            }
+        }
+
+        matching_events.push((ev_contract, event_topics, event_data));
+    }
+
+    if let Some(count) = expected_count {
+        if matching_events.len() != count {
+            panic!(
+                "assert_emitted! failed: expected {} matching event(s), but found {}",
+                count,
+                matching_events.len()
+            );
+        }
+    } else if let Some(idx) = at_index {
+        if idx >= matching_events.len() {
+            panic!(
+                "assert_emitted! failed: expected matching event at index {}, but found {} matching event(s)",
+                idx,
+                matching_events.len()
+            );
+        }
+    } else if matching_events.is_empty() {
+        panic!(
+            "assert_emitted! failed: expected event was not found.\n\
+             \n\
+             Contract : {contract:?}\n\
+             Topics   : {topics:?}\n\
+             Data     : {data:?}\n\
+             \n\
+             Total events emitted in env: {total_count}",
+            contract = contract,
+            topics = filter_topics,
+            data = expected_data,
+            total_count = total_events_count,
+        );
+    }
+}
+
+/// Core assertion helper for `assert_not_emitted!`.
+///
+/// Panics if any event was emitted in `env`.
+pub fn assert_not_emitted_event(env: &soroban_sdk::Env) {
+    use soroban_sdk::testutils::Events as _;
+    let events = env.events().all();
+    if !events.events().is_empty() {
+        panic!(
+            "assert_not_emitted! failed: expected no events, but {} event(s) were emitted",
+            events.events().len()
+        );
+    }
+}
+
