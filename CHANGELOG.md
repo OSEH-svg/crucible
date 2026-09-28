@@ -1,3 +1,9 @@
+## [1.32.3](https://github.com/benelabs/crucible/compare/v1.32.2...v1.32.3) (2026-09-28)
+
+### Bug Fixes
+
+* **assertions:** panic assert_emitted! when no events emitted ([#770](https://github.com/benelabs/crucible/issues/770)) ([1181662](https://github.com/benelabs/crucible/commit/11816628b4a55454320f4b16354b444da8aca0f5))
+
 ## [1.32.2](https://github.com/benelabs/crucible/compare/v1.32.1...v1.32.2) (2026-09-27)
 
 ### Bug Fixes
